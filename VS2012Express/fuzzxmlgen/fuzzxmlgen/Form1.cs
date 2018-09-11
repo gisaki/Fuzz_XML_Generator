@@ -57,36 +57,34 @@ namespace fuzzxmlgen
         // 
         // XML
         // 
-        private int depth_ = 0;
         private string ParseXML(string filename)
         {
             XmlDocument xmlDocument = new XmlDocument();
             xmlDocument.Load(filename);
 
-            return findAllNodes(xmlDocument);
+            return findAllNodes(new IndentXMLNodeDecorator(), xmlDocument);
         }
-        private string findAllNodes(XmlNode node)
+        private string findAllNodes(IXMLNodeDecorator dec, XmlNode node)
         {
             string ret = "";
-            this.depth_++;
 
             Console.WriteLine("node.NodeType = [" + node.NodeType + "]");
             Console.WriteLine("node.Name = [" + node.Name + "]");
             Console.WriteLine("node.Value = [" + node.Value + "]");
 
-            ret += printNodeTagStart(node);
+            ret += printNodeTagStart(dec, node);
             foreach (XmlNode n in node.ChildNodes)
             {
-                ret += findAllNodes(n);
+                ret += findAllNodes(dec, n);
             }
-            ret += printNodeTagEnd(node);
-            this.depth_--;
+            ret += printNodeTagEnd(dec, node);
+
             return ret;
         }
-        private string printNodeTagStart(XmlNode node)
+        private string printNodeTagStart(IXMLNodeDecorator dec, XmlNode node)
         {
             string ret = "";
-            // 開始タグ
+            // start tag or start element
             switch (node.NodeType)
             {
                 case XmlNodeType.Document:
@@ -96,20 +94,24 @@ namespace fuzzxmlgen
                     ret += "<?" + node.Name + " " + node.Value + "?>";
                     break;
                 case XmlNodeType.Element:
-                    ret += "\r\n";
-                    ret += new string(' ', this.depth_ * 4);
-                    ret += "<" + node.Name;
+                    ret += dec.beforeStartElement();
+                    ret += node.Name;
                     if (node.Attributes != null)
                     {
                         foreach (XmlNode attr in node.Attributes)
                         {
                             Console.WriteLine("attr.Name = [" + attr.Name + "]");
                             Console.WriteLine("attr.Value = [" + attr.Value + "]");
-                            ret += " " + attr.Name;
-                            ret += "=" + "\"" + attr.Value + "\"";
+                            ret += dec.beforeAttributeName();
+                            ret += attr.Name;
+                            ret += dec.afterAttributeName();
+                            ret += "=";
+                            ret += dec.beforeAttributeValue();
+                            ret += "\"" + attr.Value + "\"";
+                            ret += dec.afterAttributeValue();
                         }
                     }
-                    ret += ">";
+                    ret += dec.afterStartElement();
                     break;
                 case XmlNodeType.Text:
                     ret += node.Value;
@@ -119,16 +121,16 @@ namespace fuzzxmlgen
             }
             return ret;
         }
-        private string printNodeTagEnd(XmlNode node)
+        private string printNodeTagEnd(IXMLNodeDecorator dec, XmlNode node)
         {
             string ret = "";
-            // 終了タグ
+            // end tag or end element
             switch (node.NodeType)
             {
                 case XmlNodeType.Element:
-                    /* nop */
-                    ret += "</" + node.Name;
-                    ret += ">";
+                    ret += dec.beforeEndElement();
+                    ret += node.Name;
+                    ret += dec.afterEndElement();
                     break;
                 default:
                     break;
