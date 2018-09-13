@@ -62,8 +62,54 @@ namespace fuzzxmlgen
             XmlDocument xmlDocument = new XmlDocument();
             xmlDocument.Load(filename);
 
-            return findAllNodes(new IndentXMLNodeDecorator(), xmlDocument);
+            // Generate Nested Decorator, then parse
+            return findAllNodes(GenNestedDecorator(), xmlDocument);
         }
+        private IXMLNodeDecorator GenNestedDecorator()
+        {
+            IXMLNodeDecorator base_dec = new BaseXMLNodeDecorator();
+
+            IXMLNodeDecorator inner_dec = base_dec;
+            IXMLNodeDecorator ret_dec = inner_dec;
+
+            // Generate Nested Decorator
+            if (this.checkBox_AttrSingleQuote.Checked)
+            {
+                // wrap
+                inner_dec = new AttrSingleQuoteXMLNodeDecorator(inner_dec);
+                ret_dec = inner_dec;
+            }
+            if (this.checkBox_Indent.Checked)
+            {
+                // wrap
+                IndentXMLNodeDecorator.IndentType indent_type;
+                int indent_num;
+                if (this.radioButton_Indent_space.Checked) {
+                    indent_type = IndentXMLNodeDecorator.IndentType.space;
+                    indent_num = 4; // todo
+                } else if (this.radioButton_Indent_tab.Checked){
+                    indent_type = IndentXMLNodeDecorator.IndentType.tab;
+                    indent_num = 1; // todo
+                } else {
+                    indent_type = IndentXMLNodeDecorator.IndentType.other;
+                    indent_num = 2; // todo
+                }
+
+                inner_dec = new IndentXMLNodeDecorator(inner_dec, indent_type, indent_num);
+                ret_dec = inner_dec;
+            }
+            if (this.checkBox_LineBreakBeforeAttr.Checked)
+            {
+                // wrap
+                bool cr = this.checkBox_LineBreakBeforeAttr_CR.Checked;
+                bool lf = this.checkBox_LineBreakBeforeAttr_LF.Checked;
+                inner_dec = new LineBreakBeforeAttrXMLNodeDecorator(inner_dec, cr, lf);
+                ret_dec = inner_dec;
+            }
+
+            return ret_dec;
+        }
+
         private string findAllNodes(IXMLNodeDecorator dec, XmlNode node)
         {
             string ret = "";
@@ -107,7 +153,9 @@ namespace fuzzxmlgen
                             ret += dec.afterAttributeName();
                             ret += "=";
                             ret += dec.beforeAttributeValue();
-                            ret += "\"" + attr.Value + "\"";
+                            ret += dec.AttributeQuote();
+                            ret += attr.Value;
+                            ret += dec.AttributeQuote();
                             ret += dec.afterAttributeValue();
                         }
                     }

@@ -53,8 +53,10 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IXMLNodeDecorator.cs" />
-    <Compile Include="XMLNodeDecorator.cs" />
+    <Compile Include="BaseXMLNodeDecorator.cs" />
     <Compile Include="IndentXMLNodeDecorator.cs" />
+    <Compile Include="AttrSingleQuoteXMLNodeDecorator.cs" />
+    <Compile Include="LineBreakBeforeAttrXMLNodeDecorator.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
